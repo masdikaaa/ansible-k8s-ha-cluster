@@ -112,5 +112,5 @@ MIT License. Feel free to use, modify, and contribute.
 
 ## 👤 Author
 
-**Andika Ferdi Alvianto**
+**Masdika.BIZ.ID**
 📧 [Email](mailto:me@masdika.biz.id) | 🌐 [LinkedIn](https://www.linkedin.com/in/masdika)
