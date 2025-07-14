@@ -1,0 +1,40 @@
+- name: Install haproxy
+  apt:
+    name: haproxy
+    state: present
+    update_cache: yes
+
+- name: Configure haproxy
+  copy:
+    content: |
+      global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+        daemon
+
+      defaults
+        log     global
+        mode    tcp
+        option  tcplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  50000
+        timeout server  50000
+
+      frontend kubernetes-frontend
+        bind *:6443
+        default_backend kubernetes-backend
+
+      backend kubernetes-backend
+        balance roundrobin
+        option tcp-check
+        server master1 206.237.97.101:6443 check
+        server master2 206.237.97.103:6443 check
+        server master3 206.237.97.104:6443 check
+    dest: /etc/haproxy/haproxy.cfg
+
+- name: Restart haproxy
+  service:
+    name: haproxy
+    state: restarted
+    enabled: yes

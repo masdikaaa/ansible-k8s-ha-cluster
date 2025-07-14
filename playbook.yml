@@ -1,0 +1,13 @@
+# playbook.yml
+- name: Deploy Kubernetes Cluster
+  hosts: all
+  become: yes
+  roles:
+    - common
+    - containerd
+    - cri-tools
+    - kubernetes
+    - { role: lb-haproxy, when: "'lb' in group_names" }
+    - { role: master-init, when: "inventory_hostname == 'master1'" }
+    - { role: master-join, when: "inventory_hostname != 'master1' and 'master' in group_names" }
+    - { role: worker-join, when: "'worker' in group_names" }

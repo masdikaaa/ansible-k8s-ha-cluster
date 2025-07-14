@@ -1,0 +1,22 @@
+# roles/master-join/tasks/main.yml
+
+- name: Create kubeadm join command script for control plane
+  copy:
+    dest: /tmp/kubeadm_join_cmd.sh
+    content: |
+      #!/bin/bash
+      {{ hostvars['master1'].join_command }} \
+      --discovery-token-ca-cert-hash sha256:{{ hostvars['master1'].ca_cert_hash }} \
+      --control-plane \
+      --certificate-key {{ hostvars['master1'].cert_key }} \
+      --cri-socket unix:///run/containerd/containerd.sock
+    mode: '0755'
+
+- name: Run join command to join control plane
+  shell: sh /tmp/kubeadm_join_cmd.sh
+
+- name: Set up kube config for kubectl
+  shell: |
+    mkdir -p /root/.kube
+    cp -i /etc/kubernetes/admin.conf /root/.kube/config
+    chown root:root /root/.kube/config

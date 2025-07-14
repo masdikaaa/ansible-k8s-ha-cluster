@@ -1,0 +1,40 @@
+- name: Reset Kubernetes Cluster
+  hosts: all
+  become: true
+  tasks:
+    - name: Reset kubeadm
+      shell: kubeadm reset -f
+
+    - name: Remove Kubernetes config
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/cni/net.d
+        - /root/.kube
+        - /etc/kubernetes
+        - /var/lib/etcd
+        - /var/lib/kubelet
+        - /var/lib/cni
+        - /run/containerd
+
+    - name: Reload containerd and kubelet
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        enabled: yes
+      loop:
+        - containerd
+        - kubelet
+
+    - name: Clear iptables rules
+      shell: iptables -F
+      ignore_errors: yes
+
+    - name: Clear IPVS rules
+      shell: ipvsadm --clear
+      ignore_errors: yes
+
+    - name: Clean network interfaces
+      shell: ip link delete cni0 || true
+      ignore_errors: yes

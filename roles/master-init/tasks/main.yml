@@ -1,0 +1,51 @@
+- name: Initialize Kubernetes control plane on master1
+  shell: |
+    kubeadm init \
+      --control-plane-endpoint={{ lb_ip }}:6443 \
+      --upload-certs \
+      --pod-network-cidr=192.168.0.0/16 \
+      --cri-socket unix:///run/containerd/containerd.sock
+  register: kubeadm_init
+  failed_when: kubeadm_init.rc != 0 and "already initialized" not in kubeadm_init.stderr
+
+- name: Get discovery token CA cert hash
+  shell: |
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+    openssl rsa -pubin -outform der 2>/dev/null | \
+    openssl dgst -sha256 -hex | \
+    sed 's/^.* //'
+  register: ca_cert_hash_result
+  when: inventory_hostname == "master1"
+
+- name: Set ca_cert_hash as a fact
+  set_fact:
+    ca_cert_hash: "{{ ca_cert_hash_result.stdout }}"
+  when: inventory_hostname == "master1"
+
+- name: Generate certificate key
+  shell: kubeadm init phase upload-certs --upload-certs | tail -n1
+  register: cert_key_result
+  when: inventory_hostname == "master1"
+
+- name: Set cert_key as a fact
+  set_fact:
+    cert_key: "{{ cert_key_result.stdout }}"
+  when: inventory_hostname == "master1"
+
+- name: Create kubeadm join token
+  shell: |
+    kubeadm token create --print-join-command
+  register: join_command_result
+  when: inventory_hostname == "master1"
+
+- name: Set join_command as a fact
+  set_fact:
+    join_command: "{{ join_command_result.stdout }}"
+  when: inventory_hostname == "master1"
+
+- name: Set up kube config for kubectl
+  shell: |
+    mkdir -p /root/.kube
+    cp -i /etc/kubernetes/admin.conf /root/.kube/config
+    chown root:root /root/.kube/config
+

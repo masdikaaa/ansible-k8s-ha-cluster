@@ -1,0 +1,12 @@
+- name: Create kubeadm join command script for worker
+  copy:
+    dest: /tmp/kubeadm_join_cmd.sh
+    content: |
+      #!/bin/bash
+      {{ hostvars['master1'].join_command }} \
+      --discovery-token-ca-cert-hash sha256:{{ hostvars['master1'].ca_cert_hash }} \
+      --cri-socket unix:///run/containerd/containerd.sock
+    mode: '0755'
+
+- name: Run join command script on worker node
+  shell: sh /tmp/kubeadm_join_cmd.sh
